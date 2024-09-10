@@ -3,9 +3,10 @@
     "name": "bot",
     "slug": "bot",
     "version": "1.0.0",
+    "platforms": ["ios", "android", "web"],
+
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
