@@ -4,10 +4,10 @@ import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { Formik } from "formik";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
+  GestureResponderEvent,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -23,7 +23,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import * as Yup from "yup";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -40,64 +39,62 @@ const Login: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [authInProgress, setAuthInProgress] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    if (authInProgress) return;
-
-    setAuthInProgress(true);
-
-    try {
-      const result = await promptAsync();
-      // Handle the result
-    } catch (error) {
-      console.error("Authentication error:", error);
-    } finally {
-      setAuthInProgress(false);
-    }
-  };
-
   // Setup AuthSession
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId:
       "396380590167-2c2lleliaj015es73lvv2hfo10ieq9cv.apps.googleusercontent.com",
     webClientId:
       "396380590167-vduhqqnrt2vh31ceh3ci4a351dkifh5r.apps.googleusercontent.com",
-    scopes: ["email", "profile", "openid"],
-    redirectUri: AuthSession.makeRedirectUri({
-      native: "com.minhtam78945
-    }),
+    scopes: ["email", "profile"],
+    redirectUri: AuthSession.makeRedirectUri(),
     responseType: "code",
   });
 
-  useEffect(() => {
-    const handleSignInGoogle = async () => {
-      const storedUser = await AsyncStorage.getItem("@user");
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      } else if (response?.type === "success") {
-        await getUserInfo(response?.authentication?.accessToken);
-        navigation.navigate("index");
-      }
-    };
+  // useEffect(() => {
+  //   const handleSignInGoogle = async () => {
+  //     const storedUser = await AsyncStorage.getItem("@user");
+  //     if (storedUser) {
+  //       setUser(JSON.parse(storedUser));
+  //     } else if (response?.type === "success") {
+  //       const { code } = response.params; // Extract code from response
+  //       const tokenData = await getUserInfo(code); // Pass the code to getUserInfo
+  //       if (tokenData) {
+  //         // Use the tokenData to do something, e.g., store it
+  //         navigation.navigate("index");
+  //       }
+  //     }
+  //   };
 
-    handleSignInGoogle().catch(console.error);
-  }, [response]);
+  //   handleSignInGoogle().catch(console.error);
+  // }, [response]);
 
-  const getUserInfo = async (token: any) => {
-    if (!token) return null;
-    try {
-      const response = await fetch(
-        "https://www.googleapis.com/userinfo/v2/me",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const data = await response.json();
-      await AsyncStorage.setItem("@user", JSON.stringify(data));
-      setUser(data);
-    } catch (error) {
-      console.log("Error fetching user info:", error);
-    }
-  };
+  // const getUserInfo = async (code: string) => {
+  //   if (!code) return null;
+  //   try {
+  //     const response = await fetch("https://oauth2.googleapis.com/token", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  //       body: new URLSearchParams({
+  //         code: code,
+  //         client_id: "396380590167-vduhqqnrt2vh31ceh3ci4a351dkifh5r.apps.googleusercontent.com",
+  //         client_secret: "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",
+  //         redirect_uri: AuthSession.makeRedirectUri(), // Ensure redirect_uri matches
+  //         grant_type: "authorization_code", // Specify the grant type
+  //       }),
+  //     });
+  //     const data = await response.json();
+  //     console.log("Token response:", data);
+  //     if (response.ok) {
+  //       // Handle successful token response
+  //       return data; // return token data for further use
+  //     } else {
+  //       // Handle errors
+  //       console.error("Error fetching token:", data);
+  //     }
+  //   } catch (error) {
+  //     console.log("Error fetching token:", error);
+  //   }
+  // };
 
   const handleLogin = async (values: {
     username: string;
@@ -113,14 +110,13 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleSignUp = () => {
-    navigation.navigate("register");
+  const handleSignUp = (event: GestureResponderEvent) => {
+    navigation.navigate("register", { screen: "register" });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
-
       <KeyboardAvoidingView
         style={styles.innerContainer}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -141,7 +137,6 @@ const Login: React.FC = () => {
             }) => (
               <View style={styles.formContainer}>
                 <Text style={styles.title}>Welcome Back</Text>
-
                 <TextInput
                   style={[
                     styles.input,
@@ -158,7 +153,6 @@ const Login: React.FC = () => {
                 {touched.username && errors.username ? (
                   <Text style={styles.errorText}>{errors.username}</Text>
                 ) : null}
-
                 <TextInput
                   style={[
                     styles.input,
@@ -176,7 +170,6 @@ const Login: React.FC = () => {
                 {touched.password && errors.password ? (
                   <Text style={styles.errorText}>{errors.password}</Text>
                 ) : null}
-
                 <TouchableOpacity
                   style={styles.button}
                   onPress={() => handleSubmit()}
@@ -188,28 +181,24 @@ const Login: React.FC = () => {
                     <Text style={styles.buttonText}>Login</Text>
                   )}
                 </TouchableOpacity>
-
                 <TouchableOpacity>
                   <Text style={styles.forgotPassword}>Forgot Password?</Text>
                 </TouchableOpacity>
-
                 <View style={styles.dividerContainer}>
                   <View style={styles.divider} />
                   <Text style={styles.dividerText}>OR</Text>
                   <View style={styles.divider} />
                 </View>
-
                 <TouchableOpacity
                   style={styles.googleButton}
-                  onPress={handleGoogleSignIn} // Use promptAsync for Google sign-in
+                  onPress={() => promptAsync()} // Directly call promptAsync for Google sign-in
                 >
                   <Image
-                    source={require("../../assets/images/search.png")} // Ensure the path is correct
+                    source={require("../../assets/images/search.png")}
                     style={styles.googleIcon}
                   />
                   <Text style={styles.googleButtonText}>Login with Google</Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                   style={styles.signUpButton}
                   onPress={handleSignUp}
@@ -228,7 +217,7 @@ const Login: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f7f7f7",
+    backgroundColor: "#001244",
   },
   innerContainer: {
     flex: 1,
@@ -270,7 +259,7 @@ const styles = StyleSheet.create({
   button: {
     width: "100%",
     height: 50,
-    backgroundColor: "#6a11cb",
+    backgroundColor: "#333",
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
@@ -308,8 +297,9 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 50,
     borderRadius: 8,
-    backgroundColor: "#4285f4",
+    backgroundColor: "white",
     marginBottom: 20,
+    borderColor: "#cccc",
   },
   googleIcon: {
     width: 24,
@@ -317,7 +307,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   googleButtonText: {
-    color: "#fff",
+    color: "#333",
     fontSize: 18,
     fontWeight: "600",
   },

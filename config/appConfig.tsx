@@ -1,11 +1,12 @@
 import axios from "axios";
 
-const baseURL = "http://10.10.92.189:5000";
+const baseURL = "http://10.10.92.101:5000";
 
 export const endPoints = {
-  register: "register",
-  login: "login",
-  "current-user": "current-user",
+  register: "/api/register",
+  login: "/api/login",
+  "current-user": "/api/current-user",
+  "get-recommend" : "/api/stock/recommendations"
 };
 
 export const AUTHAPI = (token: string) => {
