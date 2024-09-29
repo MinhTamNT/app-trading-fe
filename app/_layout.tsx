@@ -3,6 +3,8 @@ import React from "react";
 import Login from "./login";
 import Register from "./register"; // Import Register component
 import TabNavigationState from "./tabs";
+import AuthGuard from "@/components/ProtectRoute/ProtectRoute";
+import { AuthenticatedTabs } from "./authen";
 
 export type RootStackParamList = {
   login: undefined;
@@ -14,7 +16,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootLayout = () => {
   return (
-    <RootStack.Navigator initialRouteName="tabs">
+    <RootStack.Navigator initialRouteName="login">
       <RootStack.Screen
         name="login"
         component={Login}
@@ -27,7 +29,7 @@ export const RootLayout = () => {
       />
       <RootStack.Screen
         name="tabs"
-        component={TabNavigationState}
+        component={AuthenticatedTabs}
         options={{ headerShown: false }}
       />
     </RootStack.Navigator>

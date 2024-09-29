@@ -10,12 +10,11 @@ export const endPoints = {
 };
 
 export const AUTHAPI = (token: string) => {
-  axios.create({
+  return axios.create({
     baseURL: baseURL,
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}` }, // Use backticks for template literals
   });
 };
-
 export const API = () =>
   axios.create({
     baseURL: baseURL,

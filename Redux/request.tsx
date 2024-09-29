@@ -24,9 +24,9 @@ export const registerUser = async (
   dispatch(registerRequest());
   try {
     const res = await API().post(endPoints["register"], newUser);
-    const user = res.data; // Assuming the response contains the user data
+    const user = res.data;
     dispatch(registerSuccess(user));
-    navigate("login"); // Navigate to a success page or dashboard
+    navigate("login");
   } catch (error: any) {
     dispatch(registerFailure(error.message || "Registration failed"));
     console.error(error);
@@ -41,9 +41,10 @@ export const loginUser = async (
   dispatch(loginRequest());
   try {
     const res = await API().post(endPoints["login"], credentials);
-    const user = res.data; // Assuming the response contains the user data
+    const user = res.data;
+    console.log(user);
     dispatch(loginSuccess(user));
-    navigate("index"); // Navigate to a success page or dashboard
+    navigate("tabs");
   } catch (error: any) {
     dispatch(loginFailure(error.message || "Login failed"));
     console.error(error);

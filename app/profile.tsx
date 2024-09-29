@@ -1,26 +1,20 @@
+import { RootState } from "@/Redux/store";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack"; // Update this import
+import { useSelector } from "react-redux";
 import { RootStackParamList } from "./_layout";
 
-// Sample user data
-const user = {
-  name: "NGO TRINH MINH TAM",
-  phoneNumber: "+84 123 456 789",
-  profileImage: "https://example.com/user-profile.jpg", // Placeholder image URL
-};
-
-// Create a type for the navigation prop
 type ProfileNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const Profile: React.FC = () => {
   const navigation = useNavigation<ProfileNavigationProp>();
+  const currentUser = useSelector((state: RootState) => state?.user?.profile);
 
   const handleLogout = () => {
     console.log("User logged out");
-
     navigation.navigate("login");
   };
 
@@ -29,22 +23,19 @@ const Profile: React.FC = () => {
       {/* Header section with user's profile image, name, and phone number */}
       <View style={styles.header}>
         <Image
-          source={{ uri: user.profileImage }}
+          source={{
+            uri: currentUser?.avatarUrl
+              ? currentUser?.avatarUrl
+              : "https://e7.pngegg.com/pngimages/705/224/png-clipart-user-computer-icons-avatar-miscellaneous-heroes.png",
+          }}
           style={styles.profileImage}
         />
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userPhone}>{user.phoneNumber}</Text>
+        <Text style={styles.userName}>{currentUser?.first_name}</Text>
+        <Text style={styles.userLastName}>{currentUser?.last_name}</Text>
+        {/* Last name here */}
+        <Text style={styles.userPhone}>{currentUser?.phone_number}</Text>
       </View>
 
-      {/* Main content */}
-      <View style={styles.content}>
-        <Text style={styles.profileText}>Welcome to your profile page!</Text>
-        <Text style={styles.profileSubText}>
-          Manage your account information here.
-        </Text>
-      </View>
-
-      {/* Logout button */}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
@@ -76,26 +67,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#2B3A5D",
   },
+  userLastName: {
+    // New style for last name
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#2B3A5D",
+    marginTop: 5, // Adds some space between first and last names
+  },
   userPhone: {
     fontSize: 16,
     color: "#888",
     marginTop: 5,
-  },
-  content: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  profileText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#2B3A5D",
-    textAlign: "center",
-  },
-  profileSubText: {
-    fontSize: 14,
-    color: "#555",
-    textAlign: "center",
-    marginTop: 10,
   },
   logoutButton: {
     backgroundColor: "#FF3B30",

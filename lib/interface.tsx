@@ -1,7 +1,18 @@
 interface AuthUser {
-  id: string; // or other user ID field
+  id: string;
   username: string;
-  token: string; // Add token field
+  token: string;
+}
+
+export interface UserProfile {
+  id: string;
+  first_name?: string;
+  last_name: string;
+  avatarUrl?: string;
+  phone_number?: string;
+  need?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export { AuthUser };

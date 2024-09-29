@@ -1,5 +1,8 @@
+import { RootState } from "@/Redux/store";
+import Carousel from "@/components/Carousel/Carousel";
 import { API, endPoints } from "@/config/appConfig";
 import { useNavigation } from "@react-navigation/native"; // Import useNavigation
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,8 +14,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RootStackParamList } from "./_layout";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useSelector } from "react-redux";
 import { RootStackParamListTabs } from "./tabs";
 
 const formatPrice = (price: number, symbol: string) => {
@@ -40,13 +42,8 @@ const Home: React.FC = () => {
   const [listRecommendedStocks, setListRecommendedStocks] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true); // Loading state
   const navigation = useNavigation<HomeNavigateProps>(); // For navigation
-
-  // Mock user data
-  const user = {
-    name: "John Doe",
-    phone: "+123 456 7890",
-    imageUrl: "https://via.placeholder.com/100", // Placeholder image
-  };
+  const currentUser = useSelector((state: RootState) => state.user.profile);
+  console.log(currentUser);
 
   useEffect(() => {
     const fetchRecommendedStocks = async () => {
@@ -95,10 +92,20 @@ const Home: React.FC = () => {
         style={styles.userInfo}
         onPress={() => navigation.navigate("Profile")} // Navigate to Profile screen on press
       >
-        <Image source={{ uri: user.imageUrl }} style={styles.userImage} />
+        <Image
+          source={{
+            uri:
+              currentUser?.createdAt ||
+              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTyahNWtYVSx-EUDdzxND4-GSBaVCc91PhoDzvx80_yQUyx5Vnqjlm6cz2nASVfWBtXOg8&usqp=CAU",
+          }}
+          style={styles.userImage}
+        />
         <View>
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userPhone}>{user.phone}</Text>
+          <View style={styles.userNameContainer}>
+            <Text style={styles.userName}>{currentUser?.first_name}</Text>
+            <Text style={styles.userName}>{currentUser?.last_name}</Text>
+          </View>
+          <Text style={styles.userPhone}>{currentUser?.phone_number}</Text>
         </View>
       </TouchableOpacity>
     </View>
@@ -107,6 +114,7 @@ const Home: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
+      <Carousel />
       <View style={styles.containerContent}>
         <View style={styles.trapezoidContainer}>
           <View style={styles.trapezoidTop} />
@@ -192,6 +200,7 @@ const styles = StyleSheet.create({
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
     position: "relative",
+    borderRadius: 10,
   },
   trapezoidContent: {
     width: "100%",
@@ -204,6 +213,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 0,
     borderTopColor: "#2B3A5D",
+    borderRadius: 10,
   },
   titleText: {
     color: "white",
@@ -271,6 +281,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: "#555",
+  },
+  userNameContainer: {
+    flexDirection: "row",
+    gap: 2,
   },
 });
 

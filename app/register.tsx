@@ -11,7 +11,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
-  ActivityIndicator, // Import ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Formik } from "formik";
@@ -22,14 +22,13 @@ import Select from "@/components/Modal/SelectModal";
 import { registerUser } from "@/Redux/request";
 
 const RegisterScreen: React.FC = () => {
-  const [loading, setLoading] = useState(false); // State for loading
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
   const needs = [
-    { label: "Need 1", value: "need1" },
-    { label: "Need 2", value: "need2" },
-    { label: "Need 3", value: "need3" },
+    { label: "Need", value: "1" },
+    { label: "Auto Trade", value: "2" },
   ];
 
   const validationSchema = Yup.object().shape({
@@ -48,7 +47,7 @@ const RegisterScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#6200ea" />
 
       <KeyboardAvoidingView
         style={styles.container}
@@ -56,10 +55,10 @@ const RegisterScreen: React.FC = () => {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView contentContainerStyle={styles.formContainer}>
-            <Text style={styles.title}>Register</Text>
+            <Text style={styles.title}>Create Your Account</Text>
 
             {loading ? (
-              <ActivityIndicator size="large" color="#6200ea" /> // Display loading spinner
+              <ActivityIndicator size="large" color="#6200ea" />
             ) : (
               <Formik
                 initialValues={{
@@ -73,13 +72,13 @@ const RegisterScreen: React.FC = () => {
                 }}
                 validationSchema={validationSchema}
                 onSubmit={async (values) => {
-                  setLoading(true); // Set loading to true
+                  setLoading(true);
                   try {
                     await registerUser(values, dispatch, navigation.navigate);
                   } catch (error) {
                     console.log(error);
                   } finally {
-                    setLoading(false); // Set loading to false after submission
+                    setLoading(false);
                   }
                 }}
               >
@@ -92,6 +91,7 @@ const RegisterScreen: React.FC = () => {
                   touched,
                 }) => (
                   <>
+                    {/* Username Input */}
                     <TextInput
                       style={styles.input}
                       placeholder="Username"
@@ -104,6 +104,7 @@ const RegisterScreen: React.FC = () => {
                       <Text style={styles.errorText}>{errors.username}</Text>
                     )}
 
+                    {/* First Name Input */}
                     <TextInput
                       style={styles.input}
                       placeholder="First Name"
@@ -116,6 +117,7 @@ const RegisterScreen: React.FC = () => {
                       <Text style={styles.errorText}>{errors.first_name}</Text>
                     )}
 
+                    {/* Last Name Input */}
                     <TextInput
                       style={styles.input}
                       placeholder="Last Name"
@@ -128,6 +130,7 @@ const RegisterScreen: React.FC = () => {
                       <Text style={styles.errorText}>{errors.last_name}</Text>
                     )}
 
+                    {/* Email Input */}
                     <TextInput
                       style={styles.input}
                       placeholder="Email"
@@ -141,6 +144,7 @@ const RegisterScreen: React.FC = () => {
                       <Text style={styles.errorText}>{errors.email}</Text>
                     )}
 
+                    {/* Phone Input */}
                     <TextInput
                       style={styles.input}
                       placeholder="Phone Number"
@@ -154,6 +158,7 @@ const RegisterScreen: React.FC = () => {
                       <Text style={styles.errorText}>{errors.phone}</Text>
                     )}
 
+                    {/* Password Input */}
                     <TextInput
                       style={styles.input}
                       placeholder="Password"
@@ -167,20 +172,21 @@ const RegisterScreen: React.FC = () => {
                       <Text style={styles.errorText}>{errors.password}</Text>
                     )}
 
+                    {/* Select Need */}
                     <Select
                       options={needs}
                       value={values.need}
                       onChange={(value: string) => handleChange("need")(value)}
                       placeholder="Select Your Need"
                     />
-
                     {touched.need && errors.need && (
                       <Text style={styles.errorText}>{errors.need}</Text>
                     )}
 
+                    {/* Submit Button */}
                     <TouchableOpacity
                       style={styles.button}
-                      onPress={() => handleSubmit()} // Ensure `handleSubmit` is correctly invoked without parameters
+                      onPress={() => handleSubmit()}
                     >
                       <Text style={styles.buttonText}>Register</Text>
                     </TouchableOpacity>
@@ -198,30 +204,32 @@ const RegisterScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: "#001244",
   },
   container: {
     flex: 1,
     padding: 16,
     justifyContent: "center",
-    backgroundColor: "#ffffff",
     borderRadius: 15,
     margin: 10,
     elevation: 5,
+    backgroundColor: "#fff",
   },
   formContainer: {
     alignItems: "center",
     paddingHorizontal: 10,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "bold",
-    color: "#333",
+    color: "#6200ea",
     marginBottom: 20,
+    textAlign: "center",
   },
   input: {
     width: "100%",
-    height: 50,
-    backgroundColor: "#ffffff",
+    height: 55,
+    backgroundColor: "#f0f0f0",
     borderRadius: 10,
     paddingHorizontal: 16,
     fontSize: 16,
@@ -235,12 +243,13 @@ const styles = StyleSheet.create({
   },
   button: {
     width: "100%",
-    height: 50,
+    height: 55,
     backgroundColor: "#6200ea",
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 20,
+    elevation: 3,
   },
   buttonText: {
     fontSize: 18,
