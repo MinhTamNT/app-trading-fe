@@ -1,14 +1,12 @@
 import { loginUser } from "@/Redux/request";
 import { useNavigation } from "@react-navigation/native";
-import * as AuthSession from "expo-auth-session";
-import * as Google from "expo-auth-session/providers/google";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as WebBrowser from "expo-web-browser";
 import { Formik } from "formik";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   GestureResponderEvent,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -23,7 +21,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import * as Yup from "yup";
-
+import { RootStackParamList } from "./_layout";
 WebBrowser.maybeCompleteAuthSession();
 
 // Validation schema
@@ -32,23 +30,24 @@ const validationSchema = Yup.object().shape({
   password: Yup.string().required("Password is required"),
 });
 
+type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 const Login: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<LoginScreenNavigationProp>();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [authInProgress, setAuthInProgress] = useState(false);
-
   // Setup AuthSession
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId:
-      "396380590167-2c2lleliaj015es73lvv2hfo10ieq9cv.apps.googleusercontent.com",
-    webClientId:
-      "396380590167-vduhqqnrt2vh31ceh3ci4a351dkifh5r.apps.googleusercontent.com",
-    scopes: ["email", "profile"],
-    redirectUri: AuthSession.makeRedirectUri(),
-    responseType: "code",
-  });
+  // const [request, response, promptAsync] = Google.useAuthRequest({
+  //   androidClientId:
+  //     "396380590167-2c2lleliaj015es73lvv2hfo10ieq9cv.apps.googleusercontent.com",
+  //   webClientId:
+  //     "396380590167-vduhqqnrt2vh31ceh3ci4a351dkifh5r.apps.googleusercontent.com",
+  //   scopes: ["email", "profile"],
+  //   redirectUri: AuthSession.makeRedirectUri(),
+  //   responseType: "code",
+  // });
 
   // useEffect(() => {
   //   const handleSignInGoogle = async () => {
@@ -111,7 +110,7 @@ const Login: React.FC = () => {
   };
 
   const handleSignUp = (event: GestureResponderEvent) => {
-    navigation.navigate("register", { screen: "register" });
+    navigation.navigate("register");
   };
 
   return (
@@ -189,16 +188,7 @@ const Login: React.FC = () => {
                   <Text style={styles.dividerText}>OR</Text>
                   <View style={styles.divider} />
                 </View>
-                <TouchableOpacity
-                  style={styles.googleButton}
-                  onPress={() => promptAsync()} // Directly call promptAsync for Google sign-in
-                >
-                  <Image
-                    source={require("../../assets/images/search.png")}
-                    style={styles.googleIcon}
-                  />
-                  <Text style={styles.googleButtonText}>Login with Google</Text>
-                </TouchableOpacity>
+
                 <TouchableOpacity
                   style={styles.signUpButton}
                   onPress={handleSignUp}
@@ -216,7 +206,8 @@ const Login: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    height: "100%",
+    justifyContent: "center",
     backgroundColor: "#001244",
   },
   innerContainer: {
@@ -322,6 +313,7 @@ const styles = StyleSheet.create({
     color: "#d9534f",
     fontSize: 14,
     marginBottom: 10,
+    textAlign: "left",
   },
 });
 

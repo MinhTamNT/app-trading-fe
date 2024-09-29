@@ -1,15 +1,35 @@
-import { persistor, store } from "@/Redux/store";
-import { Stack } from "expo-router";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
-import { Provider } from "react-redux";
-import { PersistGate } from "redux-persist/integration/react";
+import Login from "./login";
+import Register from "./register"; // Import Register component
+import TabNavigationState from "./tabs";
+
+export type RootStackParamList = {
+  login: undefined;
+  register: undefined;
+  tabs: undefined;
+};
+
+const RootStack = createNativeStackNavigator<RootStackParamList>();
+
 export const RootLayout = () => {
-  <Provider store={store}>
-    <PersistGate loading={null} persistor={persistor}>
-      <Stack>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-      </Stack>
-    </PersistGate>
-  </Provider>;
+  return (
+    <RootStack.Navigator initialRouteName="tabs">
+      <RootStack.Screen
+        name="login"
+        component={Login}
+        options={{ headerShown: false }}
+      />
+      <RootStack.Screen
+        name="register"
+        component={Register}
+        options={{ headerShown: false }}
+      />
+      <RootStack.Screen
+        name="tabs"
+        component={TabNavigationState}
+        options={{ headerShown: false }}
+      />
+    </RootStack.Navigator>
+  );
 };
