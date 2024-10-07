@@ -1,7 +1,6 @@
 import { RootState } from "@/Redux/store";
-import Carousel from "@/components/Carousel/Carousel";
 import { API, endPoints } from "@/config/appConfig";
-import { useNavigation } from "@react-navigation/native"; // Import useNavigation
+import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useState } from "react";
 import {
@@ -15,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
+import io from "socket.io-client"; // Import Socket.IO client
 import { RootStackParamListTabs } from "./tabs";
 
 const formatPrice = (price: number, symbol: string) => {
@@ -40,10 +40,22 @@ type HomeNavigateProps = NativeStackNavigationProp<RootStackParamListTabs>;
 
 const Home: React.FC = () => {
   const [listRecommendedStocks, setListRecommendedStocks] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true); // Loading state
-  const navigation = useNavigation<HomeNavigateProps>(); // For navigation
+  const [loading, setLoading] = useState<boolean>(true);
+  const navigation = useNavigation<HomeNavigateProps>();
   const currentUser = useSelector((state: RootState) => state.user.profile);
-  console.log(currentUser);
+
+  useEffect(() => {
+    const socket = io("http://10.10.92.101:5000");
+
+    socket.on("recommendations_fetched", (data) => {
+      console.log("Received recommendations:");
+      setListRecommendedStocks(data);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchRecommendedStocks = async () => {
@@ -86,104 +98,103 @@ const Home: React.FC = () => {
     );
   };
 
-  const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      <TouchableOpacity
-        style={styles.userInfo}
-        onPress={() => navigation.navigate("Profile")} // Navigate to Profile screen on press
-      >
-        <Image
-          source={{
-            uri:
-              currentUser?.createdAt ||
-              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTyahNWtYVSx-EUDdzxND4-GSBaVCc91PhoDzvx80_yQUyx5Vnqjlm6cz2nASVfWBtXOg8&usqp=CAU",
-          }}
-          style={styles.userImage}
-        />
-        <View>
-          <View style={styles.userNameContainer}>
-            <Text style={styles.userName}>{currentUser?.first_name}</Text>
-            <Text style={styles.userName}>{currentUser?.last_name}</Text>
-          </View>
-          <Text style={styles.userPhone}>{currentUser?.phone_number}</Text>
-        </View>
-      </TouchableOpacity>
-    </View>
-  );
+  const renderHeader = () => {
+    const avatarURL = currentUser?.createdAt
+      ? currentUser.createdAt
+      : `https://ui-avatars.com/api/?name=${currentUser?.first_name}+${currentUser?.last_name}&background=random`;
 
-  return (
-    <SafeAreaView style={styles.container}>
-      {renderHeader()}
-      <Carousel />
-      <View style={styles.containerContent}>
+    return (
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          style={styles.userInfo}
+          onPress={() => navigation.navigate("Profile")}
+        >
+          <Image source={{ uri: avatarURL }} style={styles.userImage} />
+          <View>
+            <View style={styles.userNameContainer}>
+              <Text style={styles.userName}>{currentUser?.last_name}</Text>
+              <Text style={styles.userName}>{currentUser?.first_name}</Text>
+            </View>
+            <Text style={styles.userPhone}>{currentUser?.phone_number}</Text>
+          </View>
+        </TouchableOpacity>
+
         <View style={styles.trapezoidContainer}>
           <View style={styles.trapezoidTop} />
           <View style={styles.trapezoidContent}>
-            <Text style={styles.titleText}>Danh mục đang nắm giữ</Text>
+            <Text style={styles.titleText}>Danh mục đang nắm và theo dõi</Text>
           </View>
           <View style={styles.trapezoidBottom} />
         </View>
       </View>
+    );
+  };
 
-      <View style={styles.stockContainer}>
-        <View style={styles.tableHeader}>
-          <Text style={styles.tableHeaderText}>Mã CK</Text>
-          <Text style={styles.tableHeaderText}>Ngày Mua</Text>
-          <Text style={styles.tableHeaderText}>Giá Mua</Text>
-          <Text style={styles.tableHeaderText}>Giá Hiện Tại</Text>
-          <Text style={styles.tableHeaderText}>Lợi Nhuận</Text>
-        </View>
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2B3A5D" />
-            <Text style={styles.loadingText}>Loading...</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={listRecommendedStocks}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.symbol}
-          />
-        )}
-      </View>
+  return (
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={listRecommendedStocks}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.symbol.toString()}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#2B3A5D" />
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Image
+                source={{ uri: "https://path-to-your-image.png" }} // Replace with your image URL
+                style={styles.emptyImage}
+              />
+              <Text style={styles.emptyText}>No recommendations available</Text>
+              <Text style={styles.suggestionText}>
+                Try refreshing or check back later!
+              </Text>
+            </View>
+          )
+        }
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "white",
-    paddingHorizontal: 4,
-    color: "#333",
+    backgroundColor: "white", // Light background for contrast
+    paddingHorizontal: 16,
+    paddingTop: 10,
     height: "100%",
   },
   headerContainer: {
     marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+    paddingBottom: 10,
   },
   userInfo: {
     flexDirection: "row",
     alignItems: "center",
-    color: "#333",
+    marginBottom: 10,
   },
   userImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     marginRight: 10,
+    borderWidth: 2,
+    borderColor: "#2B3A5D", // Border around user image
   },
   userName: {
     color: "#333",
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
   },
   userPhone: {
-    color: "#333",
-    fontSize: 14,
-  },
-  containerContent: {
-    alignItems: "center",
-    backgroundColor: "white",
+    color: "#555",
+    fontSize: 16,
   },
   trapezoidContainer: {
     width: "100%",
@@ -200,7 +211,6 @@ const styles = StyleSheet.create({
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
     position: "relative",
-    borderRadius: 10,
   },
   trapezoidContent: {
     width: "100%",
@@ -213,78 +223,76 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 0,
     borderTopColor: "#2B3A5D",
-    borderRadius: 10,
   },
   titleText: {
     color: "white",
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
-  },
-  stockContainer: {
-    width: "100%",
-    borderRadius: 5,
-    overflow: "hidden",
-    backgroundColor: "#ffffff",
-    marginTop: 20,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#2B3A5D",
-    paddingVertical: 12,
-  },
-  tableHeaderText: {
-    flex: 1,
-    fontWeight: "bold",
-    fontSize: 14,
-    textAlign: "center",
-    color: "white",
   },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 12,
-    backgroundColor: "#f9f9f9",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-    alignItems: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    backgroundColor: "#ffffff",
+    borderRadius: 8,
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   tableCell: {
     flex: 1,
-    fontSize: 12,
-    paddingHorizontal: 5,
-    textAlign: "left",
+    textAlign: "center",
+    fontSize: 16,
+    padding: 5,
   },
   stockCode: {
-    fontWeight: "bold",
-    color: "green",
+    color: "#333",
   },
   dateCell: {
-    textAlign: "center",
+    color: "#333",
   },
   priceCell: {
-    textAlign: "right",
+    color: "#333",
   },
   profitCell: {
-    textAlign: "right",
+    color: "#333",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: "#555",
   },
   userNameContainer: {
     flexDirection: "row",
-    gap: 2,
+    gap: 4,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  emptyImage: {
+    width: 100, // Adjust size as needed
+    height: 100, // Adjust size as needed
+    marginBottom: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: "#333",
+    fontWeight: "bold",
+  },
+  suggestionText: {
+    fontSize: 16,
+    color: "#555",
+    textAlign: "center",
   },
 });
 

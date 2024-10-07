@@ -2,8 +2,10 @@ import AuthGuard from "@/components/ProtectRoute/ProtectRoute"; // Adjust the im
 import React from "react";
 import TabNavigationState from "./tabs";
 
-export const AuthenticatedTabs = () => (
-  <AuthGuard>
-    <TabNavigationState />
-  </AuthGuard>
-);
+export const AuthenticatedTabs: React.FC = () => {
+  return (
+    <AuthGuard>
+      <TabNavigationState />
+    </AuthGuard>
+  );
+};

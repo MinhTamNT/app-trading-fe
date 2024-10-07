@@ -1,320 +1,340 @@
-import { loginUser } from "@/Redux/request";
+import { RootState } from "@/Redux/store";
+import { API, endPoints } from "@/config/appConfig";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import * as WebBrowser from "expo-web-browser";
-import { Formik } from "formik";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  GestureResponderEvent,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  StatusBar,
+  FlatList,
+  Image,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useDispatch } from "react-redux";
-import * as Yup from "yup";
-import { RootStackParamList } from "./_layout";
-WebBrowser.maybeCompleteAuthSession();
+import { useSelector } from "react-redux";
+import io from "socket.io-client"; // Import Socket.IO client
+import { RootStackParamListTabs } from "./tabs";
 
-// Validation schema
-const validationSchema = Yup.object().shape({
-  username: Yup.string().required("Username is required"),
-  password: Yup.string().required("Password is required"),
-});
+const formatPrice = (price: number, symbol: string) => {
+  const priceStr = price.toString();
+  return !symbol.startsWith("VN30")
+    ? priceStr.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    : priceStr;
+};
 
-type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+const formatProfit = (profit: number) => {
+  return profit.toFixed(2);
+};
 
-const Login: React.FC = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
-  const dispatch = useDispatch();
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [authInProgress, setAuthInProgress] = useState(false);
-  // Setup AuthSession
-  // const [request, response, promptAsync] = Google.useAuthRequest({
-  //   androidClientId:
-  //     "396380590167-2c2lleliaj015es73lvv2hfo10ieq9cv.apps.googleusercontent.com",
-  //   webClientId:
-  //     "396380590167-vduhqqnrt2vh31ceh3ci4a351dkifh5r.apps.googleusercontent.com",
-  //   scopes: ["email", "profile"],
-  //   redirectUri: AuthSession.makeRedirectUri(),
-  //   responseType: "code",
-  // });
+const formatVietnameseDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
 
-  // useEffect(() => {
-  //   const handleSignInGoogle = async () => {
-  //     const storedUser = await AsyncStorage.getItem("@user");
-  //     if (storedUser) {
-  //       setUser(JSON.parse(storedUser));
-  //     } else if (response?.type === "success") {
-  //       const { code } = response.params; // Extract code from response
-  //       const tokenData = await getUserInfo(code); // Pass the code to getUserInfo
-  //       if (tokenData) {
-  //         // Use the tokenData to do something, e.g., store it
-  //         navigation.navigate("index");
-  //       }
-  //     }
-  //   };
+type HomeNavigateProps = NativeStackNavigationProp<RootStackParamListTabs>;
 
-  //   handleSignInGoogle().catch(console.error);
-  // }, [response]);
+const Home: React.FC = () => {
+  const [listRecommendedStocks, setListRecommendedStocks] = useState<any[]>([]);
+  const [listClosedCategories, setListClosedCategories] = useState<any[]>([]); // State for closed categories
+  const [loading, setLoading] = useState<boolean>(true);
+  const navigation = useNavigation<HomeNavigateProps>();
+  const currentUser = useSelector((state: RootState) => state.user.profile);
 
-  // const getUserInfo = async (code: string) => {
-  //   if (!code) return null;
-  //   try {
-  //     const response = await fetch("https://oauth2.googleapis.com/token", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  //       body: new URLSearchParams({
-  //         code: code,
-  //         client_id: "396380590167-vduhqqnrt2vh31ceh3ci4a351dkifh5r.apps.googleusercontent.com",
-  //         client_secret: "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",
-  //         redirect_uri: AuthSession.makeRedirectUri(), // Ensure redirect_uri matches
-  //         grant_type: "authorization_code", // Specify the grant type
-  //       }),
-  //     });
-  //     const data = await response.json();
-  //     console.log("Token response:", data);
-  //     if (response.ok) {
-  //       // Handle successful token response
-  //       return data; // return token data for further use
-  //     } else {
-  //       // Handle errors
-  //       console.error("Error fetching token:", data);
-  //     }
-  //   } catch (error) {
-  //     console.log("Error fetching token:", error);
-  //   }
-  // };
+  useEffect(() => {
+    const socket = io("http://10.10.92.101:5000");
 
-  const handleLogin = async (values: {
-    username: string;
-    password: string;
-  }) => {
-    setLoading(true);
-    try {
-      await loginUser(values, dispatch, navigation.navigate);
-    } catch (error) {
-      console.error("Login failed:", error);
-    } finally {
-      setLoading(false);
-    }
+    socket.on("recommendations_fetched", (data) => {
+      console.log("Received recommendations:");
+      setListRecommendedStocks(data);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchRecommendedStocks = async () => {
+      try {
+        const response = await API().get(endPoints["get-recommend"]);
+        setListRecommendedStocks(response.data.data);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchClosedCategories = async () => {
+      // Function to fetch closed categories
+      try {
+        const response = await API().get(endPoints["get-closed-categories"]); // Adjust endpoint as necessary
+        setListClosedCategories(response.data.data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchRecommendedStocks();
+    fetchClosedCategories(); // Call the fetch function
+  }, []);
+
+  const renderItem = ({ item }: any) => {
+    return (
+      <View style={styles.tableRow}>
+        <Text style={[styles.tableCell, styles.stockCode]}>{item.symbol}</Text>
+        <Text style={[styles.tableCell, styles.dateCell]}>
+          {formatVietnameseDate(item.date)}
+        </Text>
+        <Text style={[styles.tableCell, styles.priceCell]}>
+          {formatPrice(item.priceRecommend, item.symbol)}{" "}
+        </Text>
+        <Text style={[styles.tableCell, styles.priceCell]}>
+          {formatPrice(item.current_price, item.symbol)}{" "}
+        </Text>
+        <Text
+          style={[
+            styles.tableCell,
+            styles.profitCell,
+            { color: item.profit > 0 ? "green" : "red" },
+          ]}
+        >
+          {formatProfit(item.profit)} %
+        </Text>
+      </View>
+    );
   };
 
-  const handleSignUp = (event: GestureResponderEvent) => {
-    navigation.navigate("register");
+  const renderHeader = () => {
+    const avatarURL = currentUser?.createdAt
+      ? currentUser.createdAt
+      : `https://ui-avatars.com/api/?name=${currentUser?.first_name}+${currentUser?.last_name}&background=random`;
+
+    return (
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          style={styles.userInfo}
+          onPress={() => navigation.navigate("Profile")}
+        >
+          <Image source={{ uri: avatarURL }} style={styles.userImage} />
+          <View>
+            <View>
+              <Text style={styles.userName}>{currentUser?.last_name}</Text>
+              <Text style={styles.userName}>{currentUser?.first_name}</Text>
+            </View>
+            <Text style={styles.userPhone}>{currentUser?.phone_number}</Text>
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.trapezoidContainer}>
+          <View style={styles.trapezoidTop} />
+          <View style={styles.trapezoidContent}>
+            <Text style={styles.titleText}>Danh mục đang nắm và theo dõi</Text>
+          </View>
+          <View style={styles.trapezoidBottom} />
+        </View>
+      </View>
+    );
+  };
+
+  const renderClosedCategories = () => {
+    // Function to render closed categories
+    if (listClosedCategories.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No closed categories available</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View>
+        <Text style={styles.sectionTitle}>Danh mục đã đóng</Text>
+        {listClosedCategories.map((category, index) => (
+          <View key={index} style={styles.categoryItem}>
+            <Text style={styles.categoryText}>{category.name}</Text>
+          </View>
+        ))}
+      </View>
+    );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <KeyboardAvoidingView
-        style={styles.innerContainer}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <Formik
-            initialValues={{ username: "", password: "" }}
-            validationSchema={validationSchema}
-            onSubmit={handleLogin}
-          >
-            {({
-              handleChange,
-              handleBlur,
-              handleSubmit,
-              values,
-              errors,
-              touched,
-            }) => (
-              <View style={styles.formContainer}>
-                <Text style={styles.title}>Welcome Back</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    touched.username && errors.username
-                      ? styles.inputError
-                      : null,
-                  ]}
-                  placeholder="Username"
-                  placeholderTextColor="#ccc"
-                  onChangeText={handleChange("username")}
-                  onBlur={handleBlur("username")}
-                  value={values.username}
-                />
-                {touched.username && errors.username ? (
-                  <Text style={styles.errorText}>{errors.username}</Text>
-                ) : null}
-                <TextInput
-                  style={[
-                    styles.input,
-                    touched.password && errors.password
-                      ? styles.inputError
-                      : null,
-                  ]}
-                  placeholder="Password"
-                  placeholderTextColor="#ccc"
-                  secureTextEntry
-                  onChangeText={handleChange("password")}
-                  onBlur={handleBlur("password")}
-                  value={values.password}
-                />
-                {touched.password && errors.password ? (
-                  <Text style={styles.errorText}>{errors.password}</Text>
-                ) : null}
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={() => handleSubmit()}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.buttonText}>Login</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity>
-                  <Text style={styles.forgotPassword}>Forgot Password?</Text>
-                </TouchableOpacity>
-                <View style={styles.dividerContainer}>
-                  <View style={styles.divider} />
-                  <Text style={styles.dividerText}>OR</Text>
-                  <View style={styles.divider} />
-                </View>
-
-                <TouchableOpacity
-                  style={styles.signUpButton}
-                  onPress={handleSignUp}
-                >
-                  <Text style={styles.signUpText}>Create an Account</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </Formik>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+      <FlatList
+        data={listRecommendedStocks}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.symbol.toString()}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#2B3A5D" />
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Image
+                source={{ uri: "https://path-to-your-image.png" }} // Replace with your image URL
+                style={styles.emptyImage}
+              />
+              <Text style={styles.emptyText}>No recommendations available</Text>
+              <Text style={styles.suggestionText}>
+                Try refreshing or check back later!
+              </Text>
+            </View>
+          )
+        }
+      />
+      {renderClosedCategories()} {/* Render closed categories below FlatList */}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    height: "100%",
-    justifyContent: "center",
-    backgroundColor: "#001244",
-  },
-  innerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  formContainer: {
-    width: "90%",
-    maxWidth: 400,
-    padding: 20,
-    borderRadius: 10,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: 20,
-  },
-  input: {
-    width: "100%",
-    height: 50,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    backgroundColor: "white", // Light background for contrast
     paddingHorizontal: 16,
-    fontSize: 16,
-    marginBottom: 15,
+    paddingTop: 10,
+    height: "100%",
   },
-  inputError: {
-    borderColor: "#d9534f",
+  headerContainer: {
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+    paddingBottom: 10,
   },
-  button: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#333",
-    borderRadius: 8,
-    justifyContent: "center",
+  userInfo: {
+    flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
+  userImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 10,
+    borderWidth: 2,
+    borderColor: "#2B3A5D", // Border around user image
   },
-  forgotPassword: {
-    color: "#6a11cb",
+  userName: {
+    color: "#333",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  userPhone: {
+    color: "#555",
     fontSize: 16,
-    marginTop: 10,
   },
-  dividerContainer: {
-    flexDirection: "row",
+  trapezoidContainer: {
+    width: "100%",
     alignItems: "center",
+    marginBottom: 20,
+  },
+  trapezoidTop: {
+    width: "100%",
+    height: 0,
+    borderTopWidth: 30,
+    borderBottomColor: "#2B3A5D",
+    borderLeftWidth: 30,
+    borderRightWidth: 30,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    position: "relative",
+  },
+  trapezoidContent: {
+    width: "100%",
+    backgroundColor: "#2B3A5D",
+    alignItems: "center",
+    paddingVertical: 10,
+    position: "absolute",
+  },
+  trapezoidBottom: {
+    width: "100%",
+    height: 0,
+    borderTopColor: "#2B3A5D",
+  },
+  titleText: {
+    color: "white",
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+  tableRow: {
+    flexDirection: "row",
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  tableCell: {
+    flex: 1,
+    fontSize: 16,
+    textAlign: "center",
+  },
+  stockCode: {
+    fontWeight: "bold",
+  },
+  dateCell: {
+    color: "#888",
+  },
+  priceCell: {
+    color: "#333",
+  },
+  profitCell: {
+    fontWeight: "bold",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginVertical: 10,
+  },
+  categoryItem: {
+    padding: 10,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 5,
+    marginBottom: 5,
+  },
+  categoryText: {
+    fontSize: 16,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
     marginVertical: 20,
   },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#ddd",
+  emptyImage: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
   },
-  dividerText: {
-    marginHorizontal: 10,
+  emptyText: {
     fontSize: 16,
-    color: "#666",
+    color: "#777",
   },
-  googleButton: {
-    flexDirection: "row",
+  loadingContainer: {
     alignItems: "center",
     justifyContent: "center",
-    width: "100%",
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: "white",
-    marginBottom: 20,
-    borderColor: "#cccc",
+    marginVertical: 20,
   },
-  googleIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 10,
-  },
-  googleButtonText: {
-    color: "#333",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  signUpButton: {
-    marginTop: 20,
-  },
-  signUpText: {
-    color: "#6a11cb",
+  loadingText: {
     fontSize: 16,
+    color: "#777",
   },
-  errorText: {
-    color: "#d9534f",
-    fontSize: 14,
-    marginBottom: 10,
-    textAlign: "left",
+  suggestionText: {
+    fontSize: 16,
+    color: "#777",
   },
 });
 
-export default Login;
+export default Home;

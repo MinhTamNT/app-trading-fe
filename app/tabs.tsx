@@ -1,12 +1,12 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React from "react";
-import Ionicons from "react-native-vector-icons/Ionicons"; // Corrected import statement
+import Ionicons from "react-native-vector-icons/Ionicons";
 import Home from "./home";
 import Profile from "./profile";
 
 export type RootStackParamListTabs = {
-  Home: undefined; 
-  Profile: undefined; 
+  Home: undefined;
+  Profile: undefined;
 };
 
 const Tabs = createBottomTabNavigator();

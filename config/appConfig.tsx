@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = "http://192.168.0.103:5000";
+const baseURL = "http://10.10.93.13:5000";
 
 export const endPoints = {
   register: "/api/register",
